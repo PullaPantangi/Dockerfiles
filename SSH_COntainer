@@ -1,27 +1,10 @@
-# Use an official CentOS base image
-FROM centos:latest
-
-# Install OpenSSH server
-RUN yum install -y openssh-server && yum clean all
-
-# Create a new user 'sshuser' and set password (replace 'password' with your desired password)
-RUN useradd -m -s /bin/bash sshuser && \
-    echo 'sshuser:password' | chpasswd
-
-# Permit SSH login for the new user
-RUN sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config && \
-    echo 'AllowUsers sshuser' >> /etc/ssh/sshd_config
-
-# Generate SSH keys for the new user
-RUN mkdir /home/sshuser/.ssh && \
-    ssh-keygen -t rsa -f /home/sshuser/.ssh/id_rsa -N '' && \
-    cp /home/sshuser/.ssh/id_rsa.pub /home/sshuser/.ssh/authorized_keys && \
-    chown -R sshuser: /home/sshuser/.ssh && \
-    chmod 700 /home/sshuser/.ssh && \
-    chmod 600 /home/sshuser/.ssh/authorized_keys
-
-# Expose SSH port
-EXPOSE 22
-
-# Start SSH server
-CMD ["/usr/sbin/sshd", "-D"]
+FROM almalinux:latest
+RUN yum install -y yum-utils
+RUN yumdownloader openssh-server
+RUN rpm -qpl openssh-server*.rpm
+RUN yum localinstall -y -v openssh-server*.rpm
+RUN  useradd ssh_user &&  echo "ssh_user:abc123" |  chpasswd && mkdir -p /home/ssh_user/.ssh  && ssh-keygen -t rsa -f /home/ssh_user/.ssh/ssh_user_rsa -N '' && \
+     cp /home/ssh_user/.ssh/ssh_user_rsa.pub /home/ssh_user/.ssh/authorized_keys && \
+     chmod 700 /home/ssh_user/.ssh &&  chown ssh_user: -R /home/ssh_user/.ssh && chmod 600 /home/ssh_user/.ssh/authorized_keys
+RUN ssh-keygen -A
+CMD [ "/usr/sbin/sshd", "-D"]
