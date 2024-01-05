@@ -1,0 +1,27 @@
+# Use an official CentOS base image
+FROM centos:latest
+
+# Install OpenSSH server
+RUN yum install -y openssh-server && yum clean all
+
+# Create a new user 'sshuser' and set password (replace 'password' with your desired password)
+RUN useradd -m -s /bin/bash sshuser && \
+    echo 'sshuser:password' | chpasswd
+
+# Permit SSH login for the new user
+RUN sed -i 's/#PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config && \
+    echo 'AllowUsers sshuser' >> /etc/ssh/sshd_config
+
+# Generate SSH keys for the new user
+RUN mkdir /home/sshuser/.ssh && \
+    ssh-keygen -t rsa -f /home/sshuser/.ssh/id_rsa -N '' && \
+    cp /home/sshuser/.ssh/id_rsa.pub /home/sshuser/.ssh/authorized_keys && \
+    chown -R sshuser: /home/sshuser/.ssh && \
+    chmod 700 /home/sshuser/.ssh && \
+    chmod 600 /home/sshuser/.ssh/authorized_keys
+
+# Expose SSH port
+EXPOSE 22
+
+# Start SSH server
+CMD ["/usr/sbin/sshd", "-D"]
