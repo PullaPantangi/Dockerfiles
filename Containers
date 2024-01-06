@@ -1,0 +1,29 @@
+# SSH Container 
+
+FROM almalinux:latest
+RUN yum install -y yum-utils
+RUN yum install -y mysql-server
+RUN yumdownloader openssh-server
+RUN rpm -qpl openssh-server*.rpm
+RUN yum localinstall -y -v openssh-server*.rpm
+RUN useradd ssh_user &&  echo "ssh_user:abc123" |  chpasswd && mkdir -p /home/ssh_user/.ssh
+COPY remote-pub.pub /home/ssh_user/.ssh/authorized_keys
+RUN chmod 700 /home/ssh_user/.ssh &&  chown ssh_user: -R /home/ssh_user/.ssh && chmod 600 /home/ssh_user/.ssh/authorized_keys
+RUN ssh-keygen -A
+WORKDIR /root
+RUN curl -O https://bootstrap.pypa.io/get-pip.py
+RUN python3 get-pip.py
+RUN pip3 install awscli==1.16.312 --upgrade
+ENV AWS_ACCESS_KEY_ID=AKIAQI2OVZFN46FNAAZ5
+ENV AWS_SECRET_ACCESS_KEY=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
+ENV AWS_DEFAULT_REGION=us-east-1
+CMD [ "/usr/sbin/sshd", "-D"]
+
+
+# Jenkins Container 
+
+FROM jenkins/jenkins:lts
+USER root
+RUN apt-get update && apt-get install -y vim coreutils
+RUN  echo "root:abc123" |  chpasswd
+USER jenkins
